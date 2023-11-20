@@ -177,7 +177,7 @@ const createcollection = async (info, path, uid) => {
         });
 
         await firestore
-          .doc(`users/${path.Colleges_id}`)
+          .doc(`users/${path.College_id}`)
           .update({ Department_id: FieldValue.arrayUnion(uid) });
       } else
         await firestore.collection("users").add({
