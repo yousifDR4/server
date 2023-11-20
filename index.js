@@ -74,7 +74,7 @@ app.post("/create", async (req, res) => {
 
   if (req.body.createType === "username") {
     const info = {
-      email: req.body.username + "@username.com",
+      email: req.body.email + "@username.com",
       password: req.body.password,
       uid: req.body.username,
     };
@@ -127,7 +127,7 @@ app.post("/create", async (req, res) => {
 const createcollection = async (info, path, uid) => {
   try {
     if (info.accountType === "University") {
-      if (uid) {
+      if (uid!==null) {
         await firestore.doc(`users/${uid}`).create({
           name: info.name,
           email: info.email,
@@ -195,8 +195,7 @@ const createcollection = async (info, path, uid) => {
         await firestore
           .doc(`users/${path.Department_id}`)
           .update({ Department_id: FieldValue.arrayUnion(uid) });
-      }
-      else{
+      } else {
         await firestore.doc(`users/${uid}`).create({
           name: info.name,
           email: info.email,
@@ -204,14 +203,12 @@ const createcollection = async (info, path, uid) => {
           University_id: path.University_id,
           College_id: path.College_id,
           Department_id: path.Department_id,
-          
         });
-
-
-
       }
     }
-  } catch (e) {}
+  } catch (e) {
+   return "error"
+  }
 };
 ////////
 ////////////////////?//
