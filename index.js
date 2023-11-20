@@ -78,11 +78,12 @@ app.post("/create", async (req, res) => {
       password: req.body.password,
       uid: req.body.username,
     };
+    const { path } = req.body;
     try {
       const currentUser = await User.createUser(info);
-      const newinfo = { ...info, accountType: req.body.accountType };
-      await createcollection(newinfo, path, currentUser.uid);
-      res.status(200).send({ state: "ok" });
+      const newinfo = { ...info, accountType: req.body.accountType ,name:req.body.name};
+     const k= await createcollection(newinfo, path, currentUser.uid);
+      res.status(200).send({ state: [newinfo,path,currentUser.uid] });
     } catch (e) {
       res.status(400).send({ status: e.code });
     }
@@ -142,6 +143,7 @@ const createcollection = async (info, path, uid) => {
         });
     } else if (info.accountType === "College") {
       if (uid !== null) {
+        try{
         await firestore.doc(`users/${uid}`).create({
           name: info.name,
           email: info.email,
@@ -152,6 +154,10 @@ const createcollection = async (info, path, uid) => {
         await firestore
           .doc(`users/${path.University_id}`)
           .update({ Colleges_id: FieldValue.arrayUnion(uid) });
+      }
+      catch(e){
+        return e
+      }
       } else
         await firestore.collection("users").add({
           name: info.name,
