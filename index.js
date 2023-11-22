@@ -35,7 +35,7 @@ app.post("/Add", async (req, res) => {
   }
 });
 app.post("/create", async (req, res) => {
-  if (req.body.accountType1!=="Admin") {
+  if (req.body.accountType!=="Admin") {
     
   
   const arr = ["Student", "Department", "College", "University"];
