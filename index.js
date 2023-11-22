@@ -7,51 +7,6 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 // Use the specified port or default to 3000
-// app.get("/auth/:userid",async(req,res)=>{
-//   console.log(req.params);
-// const {authtoken}=req.header;
-// const {userid}=req.params;
-// console.log(req.params);
-// try{
-// const authuser=await User.verifyIdToken(authtoken);
-// if (userid===authuser.uid) {
-//   res.sendStatus(200)
-// }
-// else{
-//   res.sendStatus(403);
-// }
-// }catch(e){
-//   res.sendStatus(403);
-// }
-
-// })
-app.get("/", async (req, res) => {
-  try {
-    await firestore
-      .doc("admin/n3UjbRzP9A3CDCIJynWn")
-      .set({ kl: "kdkd" }, { merge: true });
-    const m = await firestore.doc("admin/n3UjbRzP9A3CDCIJynWn").get();
-    res.send({ n: m.data() });
-  } catch (e) {
-    res.send({ e: e.code });
-  }
-});
-app.post("/sub", async (req, res) => {
-  const { universities_id, college_id, department_id, subject_id } = req.body;
-  const path = `universities/${universities_id}/colleges/${college_id}/department/${department_id}/subjects /${subject_id}`;
-  const sub = await firestore.doc(path).get();
-  res.send({ subjects: sub.exists });
-});
-app.post("/Add", async (req, res) => {
-  try {
-    const currentUser = await User.updateUser(req.body.uid, {
-      email: req.body.email,
-    });
-    res.send(currentUser);
-  } catch (e) {
-    res.sendStatus(400);
-  }
-});
 app.post("/create", async (req, res) => {
   const arr = ["Student", "Department", "College", "University"];
   const { IdToken, accountType, path } = req.body;
@@ -61,14 +16,17 @@ app.post("/create", async (req, res) => {
     const creater_accountType = (
       await firestore.doc(`users/${admin.uid}`).get()
     ).get("accountType");
-    const p1 = arr.indexOf(accountType);
-    const p2 = arr.indexOf(creater_accountType);
-    if (p2 <= p1) {
-      res.status(401).send({ e: "not allowed" });
+    if (creater_accountType !== admin) {
+      const p1 = arr.indexOf(accountType);
+      const p2 = arr.indexOf(creater_accountType);
+      if (p2 <= p1) {
+        res.status(401).send({ e: "not allowed" });
+      }
     }
   } catch (e) {
     res.status(401).send({ e: "not a valied user" });
   }
+
   ///path is obj of uids
   const UserCollection = firestore.collection("users");
 
@@ -78,12 +36,14 @@ app.post("/create", async (req, res) => {
       password: req.body.password,
       uid: req.body.username,
     };
-    const { path } = req.body;
     try {
       const currentUser = await User.createUser(info);
-      const newinfo = { ...info, accountType: req.body.accountType ,name:req.body.name};
-     const k= await createcollection(newinfo, path, currentUser.uid);
-      res.status(200).send({ state: [newinfo,path,currentUser.uid] });
+      const newinfo = {
+        ...info,
+        accountType: req.body.accountType,
+      };
+      await createcollection(newinfo, path, currentUser.uid, res);
+      res.status(200).send({ status: "ok" });
     } catch (e) {
       res.status(400).send({ status: e.code });
     }
@@ -101,10 +61,10 @@ app.post("/create", async (req, res) => {
         accountType: req.body.accountType,
         name: req.body.name,
       };
-      const k = await createcollection(info, path, uid);
-      res.status(200).send({ path: currentUser.email });
+     await createcollection(info, path, uid, res);
+      res.status(200).send({status:ok});
     } catch (e) {
-      res.send({ status: e + "1" });
+      res.send({ status: e });
     }
   } else {
     const info = {
@@ -117,18 +77,17 @@ app.post("/create", async (req, res) => {
     if (q.empty) {
       const k = await createcollection(info, path, uid);
 
-      res.send({ state: [info, path, k] });
+      res.status(200).send({ state: [k] });
     } else {
       res.status(400).send({ status: "wrong" });
     }
   }
 });
-
 //////////
-const createcollection = async (info, path, uid) => {
-  try {
-    if (info.accountType === "University") {
-      if (uid!==null) {
+const createcollection = async (info, path, uid, res) => {
+  if (info.accountType === "University") {
+    try {
+      if (uid !== null) {
         await firestore.doc(`users/${uid}`).create({
           name: info.name,
           email: info.email,
@@ -141,9 +100,12 @@ const createcollection = async (info, path, uid) => {
           email: info.email,
           accountType: info.accountType,
         });
-    } else if (info.accountType === "College") {
-      if (uid !== null) {
-        try{
+    } catch (e) {
+      res.status(401).send({ status: e });
+    }
+  } else if (info.accountType === "College") {
+    if (uid !== null) {
+      try {
         await firestore.doc(`users/${uid}`).create({
           name: info.name,
           email: info.email,
@@ -153,20 +115,28 @@ const createcollection = async (info, path, uid) => {
         });
         await firestore
           .doc(`users/${path.University_id}`)
-          .update({ Colleges_id: FieldValue.arrayUnion(uid) });
+          .update({ College_id: FieldValue.arrayUnion(uid) });
+        res.status(200).send({ status: "ok2" });
+      } catch (e) {
+        res.status(401).send({ status: e });
       }
-      catch(e){
-        return e
-      }
-      } else
-        await firestore.collection("users").add({
+    } else {
+      await firestore
+        .collection("users")
+        .add({
           name: info.name,
           email: info.email,
           accountType: info.accountType,
           University_id: path.path.University_id,
+        })
+        .catch((e) => {
+          res.status(401).send({ status: e });
         });
-    } else if (info.accountType === "Department") {
-      if (uid !== null) {
+      res.status(200).send({ status: "ok2" });
+    }
+  } else if (info.accountType === "Department") {
+    if (uid !== null) {
+      try {
         await firestore.doc(`users/${uid}`).create({
           name: info.name,
           email: info.email,
@@ -179,41 +149,49 @@ const createcollection = async (info, path, uid) => {
         await firestore
           .doc(`users/${path.College_id}`)
           .update({ Department_id: FieldValue.arrayUnion(uid) });
-      } else
-        await firestore.collection("users").add({
+
+        res.status(200).send({ status: "ok3" });
+      } catch (e) {
+        res.status(401).send({ status: e });
+      }
+    } else
+      await firestore
+        .collection("users")
+        .add({
           name: info.name,
           email: info.email,
           accountType: info.accountType,
           University_id: path.path.University_id,
           College_id: path.College_id,
+        })
+        .catch((e) => {
+          res.status(401).send({ status: e });
         });
+    res.status(200).send({ status: "ok3" });
+  } else {
+    if (uid !== null) {
+      await firestore.doc(`users/${uid}`).create({
+        name: info.name,
+        email: info.email,
+        accountType: info.accountType,
+        University_id: path.University_id,
+        College_id: path.College_id,
+        Department_id: path.Department_id,
+        uid: uid,
+      });
+      await firestore
+        .doc(`users/${path.Department_id}`)
+        .update({ Department_id: FieldValue.arrayUnion(uid) });
     } else {
-      if (uid !== null) {
-        await firestore.doc(`users/${uid}`).create({
-          name: info.name,
-          email: info.email,
-          accountType: info.accountType,
-          University_id: path.University_id,
-          College_id: path.College_id,
-          Department_id: path.Department_id,
-          uid: uid,
-        });
-        await firestore
-          .doc(`users/${path.Department_id}`)
-          .update({ Department_id: FieldValue.arrayUnion(uid) });
-      } else {
-        await firestore.doc(`users/${uid}`).create({
-          name: info.name,
-          email: info.email,
-          accountType: info.accountType,
-          University_id: path.University_id,
-          College_id: path.College_id,
-          Department_id: path.Department_id,
-        });
-      }
+      await firestore.collection(`users`).add({
+        name: info.name,
+        email: info.email,
+        accountType: info.accountType,
+        University_id: path.University_id,
+        College_id: path.College_id,
+        Department_id: path.Department_id,
+      });
     }
-  } catch (e) {
-   return "error"
   }
 };
 ////////
