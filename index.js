@@ -35,6 +35,9 @@ app.post("/Add", async (req, res) => {
   }
 });
 app.post("/create", async (req, res) => {
+  if (req.body.accountType1!=="Admin") {
+    
+  
   const arr = ["Student", "Department", "College", "University"];
   const { IdToken, accountType, path } = req.body;
   try {
@@ -53,7 +56,7 @@ app.post("/create", async (req, res) => {
   } catch (e) {
     res.status(401).send({ e: "not a valied user" });
   }
-
+  }
   ///path is obj of uids
   const UserCollection = firestore.collection("users");
   
