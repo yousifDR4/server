@@ -7,6 +7,33 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 // Use the specified port or default to 3000
+app.get("/", async (req, res) => {
+  try {
+    await firestore
+      .doc("admin/n3UjbRzP9A3CDCIJynWn")
+      .set({ kl: "kdkd" }, { merge: true });
+    const m = await firestore.doc("admin/n3UjbRzP9A3CDCIJynWn").get();
+    res.send({ n: m.data() });
+  } catch (e) {
+    res.send({ e: e.code });
+  }
+});
+app.post("/sub", async (req, res) => {
+  const { universities_id, college_id, department_id, subject_id } = req.body;
+  const path = `universities/${universities_id}/colleges/${college_id}/department/${department_id}/subjects /${subject_id}`;
+  const sub = await firestore.doc(path).get();
+  res.send({ subjects: sub.exists });
+});
+app.post("/Add", async (req, res) => {
+  try {
+    const currentUser = await User.updateUser(req.body.uid, {
+      email: req.body.email,
+    });
+    res.send(currentUser);
+  } catch (e) {
+    res.sendStatus(400);
+  }
+});
 app.post("/create", async (req, res) => {
   const arr = ["Student", "Department", "College", "University"];
   const { IdToken, accountType, path } = req.body;
@@ -16,40 +43,38 @@ app.post("/create", async (req, res) => {
     const creater_accountType = (
       await firestore.doc(`users/${admin.uid}`).get()
     ).get("accountType");
-    if (creater_accountType !== admin) {
-      const p1 = arr.indexOf(accountType);
-      const p2 = arr.indexOf(creater_accountType);
-      if (p2 <= p1) {
-        res.status(401).send({ e: "not allowed" });
-      }
+    if(creater_accountType!==admin){
+    const p1 = arr.indexOf(accountType);
+    const p2 = arr.indexOf(creater_accountType);
+    if (p2 <= p1) {
+      res.status(401).send({ e: "not allowed" });
     }
+  }
   } catch (e) {
     res.status(401).send({ e: "not a valied user" });
   }
 
   ///path is obj of uids
   const UserCollection = firestore.collection("users");
-
+  
   if (req.body.createType === "username") {
     const info = {
       email: req.body.email + "@username.com",
       password: req.body.password,
-      uid: req.body.username,
+      uid: req.body.email,
     };
     try {
       const currentUser = await User.createUser(info);
-      const newinfo = {
-        ...info,
-        accountType: req.body.accountType,
-      };
-      await createcollection(newinfo, path, currentUser.uid, res);
-      res.status(200).send({ status: "ok" });
+      const newinfo = { ...info, accountType: req.body.accountType ,name:req.body.name};
+      await createcollection(newinfo, path, currentUser.uid);
+      await firestore.doc(`users/${currentUser.uid}`).set({username:req.body.email},{merge:true})
+      res.status(200).send({ state: [newinfo,path,currentUser.uid] });
     } catch (e) {
       res.status(400).send({ status: e.code });
     }
   } else if (req.body.createType === "emailandpassword") {
     try {
-      const { path } = req.body;
+      
       const currentUser = await User.createUser({
         email: req.body.email,
         password: req.body.password,
@@ -61,10 +86,11 @@ app.post("/create", async (req, res) => {
         accountType: req.body.accountType,
         name: req.body.name,
       };
-     await createcollection(info, path, uid, res);
-      res.status(200).send({status:ok});
+      await createcollection(info, path, uid,res);
+      
+      res.status(200).send({ status:[info,path,uid]});
     } catch (e) {
-      res.send({ status: e });
+      res.send({ status:body });
     }
   } else {
     const info = {
@@ -83,11 +109,12 @@ app.post("/create", async (req, res) => {
     }
   }
 });
+
 //////////
-const createcollection = async (info, path, uid, res) => {
-  if (info.accountType === "University") {
-    try {
-      if (uid !== null) {
+const createcollection = async (info, path, uid,res) => {
+  try {
+    if (info.accountType === "University") {
+      if (uid!==null) {
         await firestore.doc(`users/${uid}`).create({
           name: info.name,
           email: info.email,
@@ -100,12 +127,9 @@ const createcollection = async (info, path, uid, res) => {
           email: info.email,
           accountType: info.accountType,
         });
-    } catch (e) {
-      res.status(401).send({ status: e });
-    }
-  } else if (info.accountType === "College") {
-    if (uid !== null) {
-      try {
+    } else if (info.accountType === "College") {
+      if (uid !== null) {
+        try{
         await firestore.doc(`users/${uid}`).create({
           name: info.name,
           email: info.email,
@@ -116,27 +140,19 @@ const createcollection = async (info, path, uid, res) => {
         await firestore
           .doc(`users/${path.University_id}`)
           .update({ College_id: FieldValue.arrayUnion(uid) });
-        res.status(200).send({ status: "ok2" });
-      } catch (e) {
-        res.status(401).send({ status: e });
       }
-    } else {
-      await firestore
-        .collection("users")
-        .add({
+      catch(e){
+        return e
+      }
+      } else
+        await firestore.collection("users").add({
           name: info.name,
           email: info.email,
           accountType: info.accountType,
           University_id: path.path.University_id,
-        })
-        .catch((e) => {
-          res.status(401).send({ status: e });
         });
-      res.status(200).send({ status: "ok2" });
-    }
-  } else if (info.accountType === "Department") {
-    if (uid !== null) {
-      try {
+    } else if (info.accountType === "Department") {
+      if (uid !== null) {
         await firestore.doc(`users/${uid}`).create({
           name: info.name,
           email: info.email,
@@ -149,49 +165,41 @@ const createcollection = async (info, path, uid, res) => {
         await firestore
           .doc(`users/${path.College_id}`)
           .update({ Department_id: FieldValue.arrayUnion(uid) });
-
-        res.status(200).send({ status: "ok3" });
-      } catch (e) {
-        res.status(401).send({ status: e });
-      }
-    } else
-      await firestore
-        .collection("users")
-        .add({
+      } else
+        await firestore.collection("users").add({
           name: info.name,
           email: info.email,
           accountType: info.accountType,
           University_id: path.path.University_id,
           College_id: path.College_id,
-        })
-        .catch((e) => {
-          res.status(401).send({ status: e });
         });
-    res.status(200).send({ status: "ok3" });
-  } else {
-    if (uid !== null) {
-      await firestore.doc(`users/${uid}`).create({
-        name: info.name,
-        email: info.email,
-        accountType: info.accountType,
-        University_id: path.University_id,
-        College_id: path.College_id,
-        Department_id: path.Department_id,
-        uid: uid,
-      });
-      await firestore
-        .doc(`users/${path.Department_id}`)
-        .update({ Department_id: FieldValue.arrayUnion(uid) });
     } else {
-      await firestore.collection(`users`).add({
-        name: info.name,
-        email: info.email,
-        accountType: info.accountType,
-        University_id: path.University_id,
-        College_id: path.College_id,
-        Department_id: path.Department_id,
-      });
+      if (uid !== null) {
+        await firestore.doc(`users/${uid}`).create({
+          name: info.name,
+          email: info.email,
+          accountType: info.accountType,
+          University_id: path.University_id,
+          College_id: path.College_id,
+          Department_id: path.Department_id,
+          uid: uid,
+        });
+        await firestore
+          .doc(`users/${path.Department_id}`)
+          .update({ Department_id: FieldValue.arrayUnion(uid) });
+      } else {
+        await firestore.collection(`users`).add({
+          name: info.name,
+          email: info.email,
+          accountType: info.accountType,
+          University_id: path.University_id,
+          College_id: path.College_id,
+          Department_id: path.Department_id,
+        });
+      }
     }
+  } catch (e) {
+   return "error"
   }
 };
 ////////
