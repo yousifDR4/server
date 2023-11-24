@@ -1,29 +1,11 @@
 const express = require("express");
 const cors = require("cors");
 const { User, firestore } = require("./fire");
-const { auth } = require("firebase-admin");
 const { FieldValue } = require("firebase-admin/firestore");
 const app = express();
 app.use(express.json());
 app.use(cors());
 // Use the specified port or default to 3000
-app.get("/", async (req, res) => {
-  try {
-    await firestore
-      .doc("admin/n3UjbRzP9A3CDCIJynWn")
-      .set({ kl: "kdkd" }, { merge: true });
-    const m = await firestore.doc("admin/n3UjbRzP9A3CDCIJynWn").get();
-    res.send({ n: m.data() });
-  } catch (e) {
-    res.send({ e: e.code });
-  }
-});
-app.post("/sub", async (req, res) => {
-  const { universities_id, college_id, department_id, subject_id } = req.body;
-  const path = `universities/${universities_id}/colleges/${college_id}/department/${department_id}/subjects /${subject_id}`;
-  const sub = await firestore.doc(path).get();
-  res.send({ subjects: sub.exists });
-});
 app.post("/Add", async (req, res) => {
   try{const{uid,IdToken,email}=req.body;
   const user=await User.verifyIdToken(IdToken);
@@ -147,7 +129,7 @@ const createcollection = async (info, path, uid, res) => {
           });
           await firestore
             .doc(`users/${path.University_id}`)
-            .update({ College_id: FieldValue.arrayUnion(uid) });
+            .update({ Colleges_id: FieldValue.arrayUnion(uid) });
         } catch (e) {
           return e;
         }
