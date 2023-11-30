@@ -59,7 +59,7 @@ app.post("/create", async (req, res) => {
       await firestore
         .doc(`users/${currentUser.uid}`)
         .set({ username: req.body.email }, { merge: true });
-      res.status(200).send({ uid: uid });
+      res.status(200).send({ uid:  currentUser.uid });
     } catch (e) {
       res.status(400).send({ status: e.code });
     }
@@ -76,7 +76,7 @@ app.post("/create", async (req, res) => {
         accountType: req.body.accountType,
         name: req.body.name,
       };
-      await createcollection(info, path, uid, res);
+      await createcollection(info, path, uid);
 
       res.status(200).send({ uid:  uid });
     } catch (e) {
