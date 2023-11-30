@@ -59,7 +59,7 @@ app.post("/create", async (req, res) => {
       await firestore
         .doc(`users/${currentUser.uid}`)
         .set({ username: req.body.email }, { merge: true });
-      res.status(200).send({ state: [newinfo, path, currentUser.uid] });
+      res.status(200).send({ uid: uid });
     } catch (e) {
       res.status(400).send({ status: e.code });
     }
@@ -78,7 +78,7 @@ app.post("/create", async (req, res) => {
       };
       await createcollection(info, path, uid, res);
 
-      res.status(200).send({ status: [info, path, uid] });
+      res.status(200).send({ uid:  uid });
     } catch (e) {
       res.send({ status: e });
     }
@@ -101,7 +101,7 @@ app.post("/create", async (req, res) => {
 });
 
 //////////
-const createcollection = async (info, path, uid, res) => {
+const createcollection = async (info, path, uid) => {
   try {
     if (info.accountType === "University") {
       if (uid !== null) {
@@ -153,7 +153,7 @@ const createcollection = async (info, path, uid, res) => {
 
         await firestore
           .doc(`users/${path.College_id}`)
-          .update({ Department_id: FieldValue.arrayUnion(uid) });
+          .update({ Departments_id: FieldValue.arrayUnion(uid) });
       } else
         await firestore.collection("users").add({
           name: info.name,
@@ -175,7 +175,7 @@ const createcollection = async (info, path, uid, res) => {
         });
         await firestore
           .doc(`users/${path.Department_id}`)
-          .update({ Department_id: FieldValue.arrayUnion(uid) });
+          .update({ Students_id: FieldValue.arrayUnion(uid) });
       } else {
         await firestore.collection(`users`).add({
           name: info.name,
@@ -188,7 +188,7 @@ const createcollection = async (info, path, uid, res) => {
       }
     }
   } catch (e) {
-    return "error";
+  
   }
 };
 ////////
