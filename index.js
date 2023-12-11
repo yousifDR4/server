@@ -57,7 +57,7 @@ app.post("/create", async (req, res) => {
         const p2= firestore.doc(`passwords/${currentUser.uid}`).create({password:req.body.password});
         const p3= firestore
         .doc(`users/${path.Department_id}`)
-        .update({ Proffessors: FieldValue.arrayUnion(currentUser.uid) });
+        .update({ professors: FieldValue.arrayUnion(currentUser.uid) });
        await Promise.all([p1,p2,p3])
      
 
@@ -103,7 +103,7 @@ app.post("/create", async (req, res) => {
         const p2= firestore.doc(`passwords/${currentUser.uid}`).create({password:req.body.password});
         const p3= firestore
         .doc(`users/${path.Department_id}`)
-        .update({ Proffessors: FieldValue.arrayUnion(currentUser.uid) });
+        .update({ professors: FieldValue.arrayUnion(currentUser.uid) });
        await Promise.all([p1,p2,p3])
 
 
