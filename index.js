@@ -6,19 +6,6 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 // Use the specified port or default to 3000
-app.post("/Add", async (req, res) => {
-  try{const{uid,IdToken,email}=req.body;
-  const user=await User.verifyIdToken(IdToken);
-  if(user.uid!==uid) res.status(401).send("not allowd")
-  
-    const currentUser = await User.updateUser(uid, {
-      email: email,
-    });
-    res.send(currentUser);
-  } catch (e) {
-    res.sendStatus(400);
-  }
-});
 app.post("/create", async (req, res) => {
   const arr = ["Student", "Department", "College", "University"];
   const { IdToken, accountType, path } = req.body;
@@ -40,7 +27,7 @@ app.post("/create", async (req, res) => {
     };
     try {
       const currentUser = await User.createUser(info);
-      const role=req.body.role?req.body.role:""
+      const role=req.body.role?req.body.role:"";
       if (role === "Proffessor") {
         const newinfo = {
           email: req.body.email + "@username.com",
@@ -90,7 +77,8 @@ app.post("/create", async (req, res) => {
         accountType: req.body.accountType,
         name: req.body.name,
       };
-      if ((req.body.role = "Proffessor")) {
+      const role=req.body.role?req.body.role:"";
+      if ((role === "Proffessor")) {
         const newinfo = {
           ...info,
           role: req.body.role,
@@ -105,13 +93,11 @@ app.post("/create", async (req, res) => {
         .doc(`users/${path.Department_id}`)
         .update({ professors: FieldValue.arrayUnion(currentUser.uid) });
        await Promise.all([p1,p2,p3])
-
-
-
-      } else await createcollection(info, path, uid);
-         res.status(200).send({uid:uid})
+      } else 
+      await createcollection(info, path, uid);
+         res.status(200).send({uid:currentUser.uid})
     } catch (e) {
-      res.send({ status: e });
+      res.status(400).send({ status: e });
     }
   } else {
     const info = {
@@ -132,7 +118,7 @@ app.post("/create", async (req, res) => {
 });
 
 //////////
-const createcollection = async (info, path, uid, res) => {
+const createcollection = async (info, path, uid) => {
   try {
     if (info.accountType === "University") {
       if (uid !== null) {
