@@ -32,6 +32,7 @@ app.post("/create", async (req, res) => {
         const newinfo = {
           email: req.body.email + "@username.com",
          uid: req.body.email,
+         name:req.body.name,
          username:req.body.email,
           role: req.body.role,
           ...req.body.pinfo,
@@ -124,6 +125,7 @@ const createcollection = async (info, path, uid) => {
       if (uid !== null) {
         await firestore.doc(`users/${uid}`).create({
           name: info.name,
+          nametoLocaleLowerCase:info.name.toLocaleLowerCase(),
           email: info.email,
           accountType: info.accountType,
           uid: uid,
