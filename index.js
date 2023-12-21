@@ -20,50 +20,51 @@ app.post("/create", async (req, res) => {
   const UserCollection = firestore.collection("users");
 
   if (req.body.createType === "username") {
+    const r1=await check(gen());
+    const r2=await check(gen());
+  
     const info = {
-      email: req.body.email + "@username.com",
+      email:r1+"@"+r2+".com",
       password: req.body.password,
-      uid: req.body.email,
+      uid: r1,
     };
     try {
       const currentUser = await User.createUser(info);
-      const role=req.body.role?req.body.role:"";
+      const role = req.body.role ? req.body.role : "";
       if (role === "Proffessor") {
         const newinfo = {
-          email: req.body.email + "@username.com",
-         uid: req.body.email,
-         name:req.body.name,
-         username:req.body.email,
+          email: info.email,
+          uid: info.uid,
+          username: req.body.email,
           role: req.body.role,
           ...req.body.pinfo,
           University_id: path.University_id,
-          College_id:path.College_id,
-          Department_id:path.Department_id,
+          College_id: path.College_id,
+          Department_id: path.Department_id,
         };
-    
-        const p1= firestore.doc(`users/${currentUser.uid}`).create(newinfo);
-        const p2= firestore.doc(`passwords/${currentUser.uid}`).create({password:req.body.password});
-        const p3= firestore
-        .doc(`users/${path.Department_id}`)
-        .update({ professors: FieldValue.arrayUnion(currentUser.uid) });
-       await Promise.all([p1,p2,p3])
-     
 
-      }else{
+        const p1 = firestore.doc(`users/${currentUser.uid}`).create(newinfo);
+        const p2 = firestore
+          .doc(`passwords/${currentUser.uid}`)
+          .create({ password: req.body.password });
+        const p3 = firestore
+          .doc(`users/${path.Department_id}`)
+          .update({ professors: FieldValue.arrayUnion(currentUser.uid) });
+        await Promise.all([p1, p2, p3]);
+      } else {
         const newinfo = {
           ...info,
           accountType: req.body.accountType,
           name: req.body.name,
         };
-      await createcollection(newinfo, path, currentUser.uid);
-      await firestore
-        .doc(`users/${currentUser.uid}`)
-        .set({ username: req.body.email }, { merge: true });
+        await createcollection(newinfo, path, currentUser.uid);
+        await firestore
+          .doc(`users/${currentUser.uid}`)
+          .set({ username: req.body.email }, { merge: true });
       }
-      res.status(200).send({ uid:currentUser.uid});
-   
+      res.status(200).send({ uid: currentUser.uid });
     } catch (e) {
-      res.status(400).send({ status: e.code });
+      res.status(401).send({ status: e.code });
     }
   } else if (req.body.createType === "emailandpassword") {
     try {
@@ -78,25 +79,26 @@ app.post("/create", async (req, res) => {
         accountType: req.body.accountType,
         name: req.body.name,
       };
-      const role=req.body.role?req.body.role:"";
-      if ((role === "Proffessor")) {
+      const role = req.body.role ? req.body.role : "";
+      if (role === "Proffessor") {
         const newinfo = {
           ...info,
           role: req.body.role,
           ...req.body.pinfo,
           University_id: path.University_id,
-          College_id:path.College_id,
-          Department_id:path.Department_id,
+          College_id: path.College_id,
+          Department_id: path.Department_id,
         };
-        const p1= firestore.doc(`users/${currentUser.uid}`).create(newinfo);
-        const p2= firestore.doc(`passwords/${currentUser.uid}`).create({password:req.body.password});
-        const p3= firestore
-        .doc(`users/${path.Department_id}`)
-        .update({ professors: FieldValue.arrayUnion(currentUser.uid) });
-       await Promise.all([p1,p2,p3])
-      } else 
-      await createcollection(info, path, uid);
-         res.status(200).send({uid:currentUser.uid})
+        const p1 = firestore.doc(`users/${currentUser.uid}`).create(newinfo);
+        const p2 = firestore
+          .doc(`passwords/${currentUser.uid}`)
+          .create({ password: req.body.password });
+        const p3 = firestore
+          .doc(`users/${path.Department_id}`)
+          .update({ professors: FieldValue.arrayUnion(currentUser.uid) });
+        await Promise.all([p1, p2, p3]);
+      } else await createcollection(info, path, uid);
+      res.status(200).send({ uid: currentUser.uid });
     } catch (e) {
       res.status(400).send({ status: e });
     }
@@ -125,7 +127,7 @@ const createcollection = async (info, path, uid) => {
       if (uid !== null) {
         await firestore.doc(`users/${uid}`).create({
           name: info.name,
-          nametoLocaleLowerCase:info.name.toLocaleLowerCase(),
+          nametoLocaleLowerCase: info.name.toLocaleLowerCase(),
           email: info.email,
           accountType: info.accountType,
           uid: uid,
@@ -212,4 +214,26 @@ const createcollection = async (info, path, uid) => {
 };
 ////////
 ////////////////////?//
+const rand=()=>(Math.floor(26*Math.random()));
+const gen=()=>{
+  let capitalLetters = [
+    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+    'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
+  ];
+  let x="";
+  for (let index = 0; index < 10; index++) {
+  x=x+capitalLetters[rand()];
+  }
+  return x;
+}
+ const check=async(x)=>{
+  const docsData=await firestore.collection("users").where("username","==",x).get();
+  const length=docsData.docs[0]?1:0
+  if(length===0)
+  return x;
+ 
+else{
+  return check(gen()); 
+}
+}
 app.listen(4000, () => console.log("Up & RUnning *4000"));
