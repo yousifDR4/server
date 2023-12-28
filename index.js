@@ -180,9 +180,9 @@ app.post("/create", async (req, res) => {
     const r2=await check(gen());
   
     const info = {
-      email:r1+"@"+r2+".com",
+      email:req.body.email+"@"+r2+".com",
       password: req.body.password,
-      uid: r1,
+      uid: req.body.email,
     };
     try {
       const currentUser = await User.createUser(info);
@@ -190,7 +190,7 @@ app.post("/create", async (req, res) => {
       if (role === "Proffessor") {
         const newinfo = {
           email: info.email,
-          uid: info.uid,
+          uid: currentUser.uid,
           username: req.body.email,
           role: req.body.role,
           ...req.body.pinfo,
