@@ -42,6 +42,51 @@ const gen = () => {
   }
   return x;
 };
+app.post("/createSTEM", async (req, res) => {
+  const {
+    accountType,
+    createType,
+    path,
+    pinfo,
+    random,
+    email,
+    password,
+    IdToken,
+  } = req.body;
+  try {
+    const admin = await User.verifyIdToken(IdToken);
+    if (!admin) res.status(401).send({ e: "not allowed1" });
+  } catch (e) {
+    res.status(401).send({ e: "not a valied user" });
+  }
+  try {
+    const info = {
+      "email": email,
+      "password": password,
+    };
+    const currentUser = await User.createUser(info);
+    const newinfo = {
+      email: currentUser.email,
+      accountType: "student",
+      Department_id: path.Department_id,
+      University_id: path.University_id,
+      College_id: path.College_id,
+      uid: currentUser.uid,
+      ...pinfo,
+    };
+    const p1 = firestore.doc(`users/${currentUser.uid}`).create(newinfo);
+    const p2 = firestore
+      .doc(`passwords/${currentUser.uid}`)
+      .create({ password: password, ...path, accountType: "student" });
+    const p3 = firestore
+      .collection(`users/${path.Department_id}/students`)
+      .add({ Student_id: currentUser.uid });
+    await Promise.all([p1, p2, p3]);
+    res.status(200).send({ uid: currentUser.uid });
+  } catch (e) {
+    res.status(400).send(e);
+  }
+});
 app.post("/createSTUS", async (req, res) => {
   const {
     accountType,
