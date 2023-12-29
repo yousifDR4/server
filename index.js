@@ -132,7 +132,8 @@ app.post("/changeusername", async (req, res) => {
   try {
     const admin = await User.verifyIdToken(IdToken);
     if (!admin) res.status(401).send({ e: "not allowed1" });
-    const userfile = (await firestore.doc(`user/${id}`).get()).data();
+    const userdoc = await firestore.doc(`user/${id}`).get();
+    const userfile=userdoc.data();
     const deleteauth = User.deleteUser(id);
 
     const info={    password: password,
