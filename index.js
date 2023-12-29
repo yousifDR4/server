@@ -132,22 +132,22 @@ app.post("/changeusername", async (req, res) => {
   try {
     const admin = await User.verifyIdToken(IdToken);
     if (!admin) res.status(401).send({ e: "not allowed1" });
-    const userdoc = await firestore.doc(`user/${id}`).get();
+    const userdoc = await firestore.doc(`users/${id}`).get();
     const userfile=userdoc.data();
-    const deleteauth = User.deleteUser(id);
-
+      await User.deleteUser(id);
     const info={    password: password,
       uid: username,
-      email: username + "@" + gen() + ".com",}
+      email: username + "@" + gen() + ".com"}
     const user = await User.createUser(info);
       const p1 = firestore.doc(`users/${id}`).delete();
       const p2 = firestore.doc(`passwords/${id}`).delete();
-      await Promise.all([p1, p2,deleteauth]);
+      await Promise.all([p1, p2]);
       const p3 = firestore.doc(`passwords/${user.uid}`).create({
         password: password,
         Department_id: Department_id,
         College_id: College_id,
         University_id: University_id,
+        accountType:"student"
       });
       const p4 = firestore
         .doc(`users/${user.uid}`)
@@ -158,8 +158,8 @@ app.post("/changeusername", async (req, res) => {
           email: info.email,
         });
       await Promise.all([p3, p4]);
-      res.sendStatus(200);
-    
+     
+      res.status(200).send({uid:user.uid});
   } catch (e) {
     res.status(401).send({ "errror": e });
   }
