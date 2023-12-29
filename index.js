@@ -134,11 +134,12 @@ app.post("/changeusername", async (req, res) => {
     if (!admin) res.status(401).send({ e: "not allowed1" });
     const userdoc = await firestore.doc(`users/${id}`).get();
     const userfile=userdoc.data();
-      await User.deleteUser(id);
+  
     const info={    password: password,
       uid: username,
       email: username + "@" + gen() + ".com"}
     const user = await User.createUser(info);
+    await User.deleteUser(id);
       const p1 = firestore.doc(`users/${id}`).delete();
       const p2 = firestore.doc(`passwords/${id}`).delete();
       await Promise.all([p1, p2]);
@@ -161,7 +162,7 @@ app.post("/changeusername", async (req, res) => {
      
       res.status(200).send({uid:user.uid});
   } catch (e) {
-    res.status(401).send({ "errror": e });
+    res.status(401).send(e);
   }
 });
 app.post("/createSTEM", async (req, res) => {
@@ -203,7 +204,7 @@ app.post("/createSTEM", async (req, res) => {
   } 
   
   catch (e) {
-    res.status(400).send(e);
+    res.status(400).send({error:e});
   }
 });
 app.post("/create", async (req, res) => {
