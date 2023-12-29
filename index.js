@@ -42,51 +42,7 @@ const gen = () => {
   }
   return x;
 };
-app.post("/createSTEM", async (req, res) => {
-  const {
-    accountType,
-    createType,
-    path,
-    pinfo,
-    random,
-    email,
-    password,
-    IdToken,
-  } = req.body;
-  try {
-    const admin = await User.verifyIdToken(IdToken);
-    if (!admin) res.status(401).send({ e: "not allowed1" });
-  } catch (e) {
-    res.status(401).send({ e: "not a valied user" });
-  }
-  try {
-    const info = {
-      "email": email,
-      "password": password,
-    };
-    const currentUser = await User.createUser(info);
-    const newinfo = {
-      email: currentUser.email,
-      accountType: "student",
-      Department_id: path.Department_id,
-      University_id: path.University_id,
-      College_id: path.College_id,
-      uid: currentUser.uid,
-      ...pinfo,
-    };
-    const p1 = firestore.doc(`users/${currentUser.uid}`).create(newinfo);
-    const p2 = firestore
-      .doc(`passwords/${currentUser.uid}`)
-      .create({ password: password, ...path, accountType: "student" });
-    const p3 = firestore
-      .collection(`users/${path.Department_id}/students`)
-      .add({ Student_id: currentUser.uid });
-    await Promise.all([p1, p2, p3]);
-    res.status(200).send({ uid: currentUser.uid });
-  } catch (e) {
-    res.status(400).send(e);
-  }
-});
+
 app.post("/createSTUS", async (req, res) => {
   const {
     accountType,
@@ -160,7 +116,7 @@ app.post("/changepassword", async (req, res) => {
     res.sendStatus(200);
     prompt.all([p1, p2]);
   } catch (e) {
-    res.status(401).send({ errror: e });
+    res.status(400).send({ errror: e });
   }
 });
 app.post("/changeusername", async (req, res) => {
@@ -176,17 +132,16 @@ app.post("/changeusername", async (req, res) => {
   try {
     const admin = await User.verifyIdToken(IdToken);
     if (!admin) res.status(401).send({ e: "not allowed1" });
-    const userfile = await firestore.doc(`user/${id}`).get();
+    const userfile = (await firestore.doc(`user/${id}`).get()).data();
     const deleteauth = User.deleteUser(id);
-    const user = await User.createUser({
-      password: password,
+
+    const info={    password: password,
       uid: username,
-      email: username + "@" + gen() + ".com",
-    });
-    if (user) {
-      const p1 = firestore.doc(`user/${id}`).delete();
+      email: username + "@" + gen() + ".com",}
+    const user = await User.createUser(info);
+      const p1 = firestore.doc(`users/${id}`).delete();
       const p2 = firestore.doc(`passwords/${id}`).delete();
-      await Promise.all([p1, p2, deleteauth]);
+      await Promise.all([p1, p2,deleteauth]);
       const p3 = firestore.doc(`passwords/${user.uid}`).create({
         password: password,
         Department_id: Department_id,
@@ -194,18 +149,60 @@ app.post("/changeusername", async (req, res) => {
         University_id: University_id,
       });
       const p4 = firestore
-        .doc(`uses/${user.uid}`)
+        .doc(`users/${user.uid}`)
         .create({
           ...userfile,
           uid: user.uid,
           username: username,
-          email: user.email,
+          email: info.email,
         });
       await Promise.all([p3, p4]);
       res.sendStatus(200);
-    } else res.status(400);
+    
   } catch (e) {
-    res.status(401).send({ errror: e });
+    res.status(401).send({ "errror": e });
+  }
+});
+app.post("/createSTEM", async (req, res) => {
+  const {
+    createType,path,pinfo, random,  email,password,IdToken,} = req.body;
+ 
+  try {
+    const admin = await User.verifyIdToken(IdToken);
+    if (!admin) res.status(401).send({ e: "not allowed1" });
+  } catch (e) {
+    res.status(401).send({ e: "not a valied user" });
+  }
+ 
+  try {
+    const info = {
+      "email": email,
+      "password": password,
+    };
+    const currentUser = await User.createUser(info);
+    const newinfo = {
+      email: currentUser.email,
+      accountType: "student",
+      Department_id: path.Department_id,
+      University_id: path.University_id,
+      College_id: path.College_id,
+      uid: currentUser.uid,
+      ...pinfo,
+    };
+    const p1 = firestore.doc(`users/${currentUser.uid}`).create(newinfo);
+    const p2 = firestore
+      .doc(`passwords/${currentUser.uid}`)
+      .create({ password: password, ...path, accountType: "student" });
+    const p3 = firestore
+      .collection(`users/${path.Department_id}/students`)
+      .add({ Student_id: currentUser.uid });
+    await Promise.all([p1, p2, p3]);
+    res.send({uid:currentUser.uid});
+   
+  } 
+  
+  catch (e) {
+    res.status(400).send(e);
   }
 });
 app.post("/create", async (req, res) => {
