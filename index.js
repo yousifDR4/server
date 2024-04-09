@@ -236,6 +236,7 @@ app.post("/create", async (req, res) => {
           email: info.email,
           uid: currentUser.uid,
           username: req.body.email,
+          accountType:accountType,
           role: req.body.role,
           ...req.body.pinfo,
           University_id: path.University_id,
