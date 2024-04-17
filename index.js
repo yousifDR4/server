@@ -238,6 +238,7 @@ app.post("/create", async (req, res) => {
           username: req.body.email,
           accountType:accountType,
           role: req.body.role,
+          k:"kf",
           ...req.body.pinfo,
           University_id: path.University_id,
           College_id: path.College_id,
