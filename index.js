@@ -207,6 +207,42 @@ app.post("/createSTEM", async (req, res) => {
     res.status(400).send({error:e});
   }
 });
+app.post("/createprofessor",async (req,res)=>{
+  const {accountType,role}=req.body;
+  try{
+  const info = {
+    email:req.body.email+"@"+"kkk"+".com",
+    password: req.body.password,
+    uid: req.body.email,
+  }
+    const currentUser = await User.createUser(info);
+
+      const newinfo = {
+        email: info.email,
+        uid: currentUser.uid,
+        username: req.body.email,
+        accountType:accountType,
+        role: req.body.role,
+        k:"kf",
+        ...req.body.pinfo,
+        ...req.body.path
+      
+      };
+
+      const p1 = firestore.doc(`users/${currentUser.uid}`).create(newinfo);
+      const p2 = firestore
+        .doc(`passwords/${currentUser.uid}`)
+        .create({ password:req.body.password});
+      const p3 = firestore
+        .doc(`users/${req.body.path.Department_id}`)
+        .update({ professors: FieldValue.arrayUnion(currentUser.uid) });
+      await Promise.all([p1,p2,p3]);
+     res.send({uid:currentUser.uid});
+    }
+    catch(e){
+      res.status(401).send({e: e })
+    }
+})
 app.post("/create", async (req, res) => {
   const arr = ["Student", "Department", "College", "University"];
   const { IdToken, accountType, path } = req.body;
