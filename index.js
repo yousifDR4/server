@@ -8,34 +8,8 @@ app.use(cors());
 // Use the specified port or default to 3000
 const rand = () => Math.floor(26 * Math.random());
 const gen = () => {
-  let capitalLetters = [
-    "A",
-    "B",
-    "C",
-    "D",
-    "E",
-    "F",
-    "G",
-    "H",
-    "I",
-    "J",
-    "K",
-    "L",
-    "M",
-    "N",
-    "O",
-    "P",
-    "Q",
-    "R",
-    "S",
-    "T",
-    "U",
-    "V",
-    "W",
-    "X",
-    "Y",
-    "Z",
-  ];
+  let capitalLetters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
+
   let x = "";
   for (let index = 0; index < 10; index++) {
     x = x + capitalLetters[rand()];
