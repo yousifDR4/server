@@ -195,8 +195,8 @@ app.post("/createprofessor",async (req,res)=>{
         email: info.email,
         uid: currentUser.uid,
         username: req.body.email,
-        accountType:accountType,
-        role: req.body.role,
+        accountType:"Professor",
+        role: [req.body.role],
         k:"kf",
         ...req.body.pinfo,
         ...req.body.path
